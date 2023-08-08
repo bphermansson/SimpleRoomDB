@@ -1,87 +1,52 @@
 package com.example.simpleroomdb
 
+/*
+https://www.daniweb.com/programming/mobile-development/tutorials/537384/android-native-how-to-prepopulate-a-room-database
+
+To prepopulate the db.
+Select the app directory in the Project view.
+Click File/New/Foilder/Assets Folder
+Start app in debug mode
+Open App inspection
+Run a statement to insert data, like 'INSERT INTO person VALUES (1, "Terence", "Landon")'
+Highlight the db name and right-click, export as a .db file to thw assets dir created above
+Load the db as prepopulated data:
+   MyDatabase::class.java,
+   "my-database")
+   .createFromAsset("my-database.db")
+   .build()
+ */
+
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
-import com.example.simpleroomdb.ui.theme.SimpleRoomDBTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lateinit var db : AppDatabase
-        Log.i("SimpleRoomDB","Start")
+        setContentView(R.layout.activity_main)
 
-        try {
-                db = Room.databaseBuilder(
-                applicationContext,
-                AppDatabase::class.java, "database-name"
-                )
-                .build()
-        } catch (exception: Exception) {
-            Log.i("SimpleRoomDB","Id: " + exception)
-        }
+        val db = Room.databaseBuilder(
+            applicationContext,
+            MyDatabase::class.java, "my-database"
+        )
+            .createFromAsset("my-database.db")
+            .build()
 
-        CoroutineScope(Dispatchers.IO).launch { // Run in another thread
-            val userDao = db.userDao()
-            val firstname = "Firstname1"
-            val lastname = "Lastname1"
-            val nyperson = User(0, firstname, lastname)
-
-            try {
-                userDao.insertAll(nyperson)
-            } catch (exception: Exception) {
-                Log.i("SimpleRoomDB", "Id: " + exception)
+        lifecycleScope.launch {
+            var n: Long = 0
+            while(db.personDao().getPersonById(n)?.firstName?.isNullOrEmpty() == false){
+                var fname = db.personDao().getPersonById(n)?.firstName
+                Log.i("pia11", "Name: " + fname.toString())
+                n++
             }
+            Log.i("pia11", "Name: " +  db.personDao().getPersonById(1)?.firstName.toString())
 
 
-            Log.i("SimpleRoomDB", "Get all users")
-            val users = userDao.getAll()
-
-            for (currentuser in users) {
-                Log.i("SimpleRoomDB", currentuser.uid.toString())
-                Log.i("SimpleRoomDB", currentuser.first_name!!)
-                Log.i("SimpleRoomDB", currentuser.last_name!!)
-            }
         }
-
-        setContent {
-            SimpleRoomDBTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SimpleRoomDBTheme {
-        Greeting("Android")
     }
 }
