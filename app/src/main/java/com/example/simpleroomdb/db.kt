@@ -19,6 +19,8 @@ data class Person(
 interface PersonDao {
     @Query("SELECT * FROM person WHERE id=:id")
     suspend fun getPersonById(id: Long): Person?
+    @Query("SELECT * FROM person")
+    suspend fun getAllPersons(): List<Person>
 }
 
 @Database(entities = [Person::class], version = 1)
