@@ -3,85 +3,35 @@ package com.example.simpleroomdb
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
-import com.example.simpleroomdb.ui.theme.SimpleRoomDBTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    var logTag: String  = "SimpleRoomDBLog"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lateinit var db : AppDatabase
-        Log.i("SimpleRoomDB","Start")
+       // setContentView(R.layout.activity_main)
 
-        try {
-                db = Room.databaseBuilder(
-                applicationContext,
-                AppDatabase::class.java, "database-name"
-                )
-                .build()
-        } catch (exception: Exception) {
-            Log.i("SimpleRoomDB","Id: " + exception)
-        }
+        val db = Room.databaseBuilder(
+            applicationContext,
+            MyDatabase::class.java, "my-database"
+        )
+            .createFromAsset("my-database.db")
+            .build()
 
-        CoroutineScope(Dispatchers.IO).launch { // Run in another thread
-            val userDao = db.userDao()
-            val firstname = "Firstname1"
-            val lastname = "Lastname1"
-            val nyperson = User(0, firstname, lastname)
-
-            try {
-                userDao.insertAll(nyperson)
-            } catch (exception: Exception) {
-                Log.i("SimpleRoomDB", "Id: " + exception)
+        lifecycleScope.launch {
+            var n: Long = 1
+            while(db.personDao().getPersonById(n)?.firstName?.isNullOrEmpty() == false){
+                var fname = db.personDao().getPersonById(n)?.firstName
+                var lname = db.personDao().getPersonById(n)?.lastName
+                Log.i(logTag, n.toString() + " Name: " + fname.toString() + " " + lname.toString())
+                n++
             }
-
-
-            Log.i("SimpleRoomDB", "Get all users")
-            val users = userDao.getAll()
-
-            for (currentuser in users) {
-                Log.i("SimpleRoomDB", currentuser.uid.toString())
-                Log.i("SimpleRoomDB", currentuser.first_name!!)
-                Log.i("SimpleRoomDB", currentuser.last_name!!)
-            }
+            var personList = db.personDao().getAllPersons()
+            for (person in personList)
+                Log.i(logTag, "Name: " + person)
         }
-
-        setContent {
-            SimpleRoomDBTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SimpleRoomDBTheme {
-        Greeting("Android")
     }
 }
